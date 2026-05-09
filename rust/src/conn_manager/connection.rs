@@ -80,7 +80,7 @@ impl ManagedConnection {
                         handler(i + 1, &e, "NetworkManager", &format!("Failed to recover connection to {}:{}", self.ip, self.port));
                     }
                     
-                    let delay = self.nm.get_next_delay(i as isize);
+                    let delay = self.nm.get_next_delay(i);
                     sleep(delay).await;
                     i += 1;
                 }
