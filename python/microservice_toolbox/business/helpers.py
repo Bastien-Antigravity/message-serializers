@@ -1,8 +1,8 @@
 import base64
-import json
-import time
 from dataclasses import asdict, is_dataclass
 from enum import Enum
+import json
+import time
 from typing import Any
 
 from .models import MarketEvent, MarketEventType

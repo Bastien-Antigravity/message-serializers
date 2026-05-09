@@ -34,17 +34,22 @@ const (
 // -----------------------------------------------------------------------------
 // NetworkManager handles reliable connection establishment with retries.
 type NetworkManager struct {
-	MaxRetries     int // Supports -1 for infinite retries
-	BaseDelay      time.Duration
-	MaxDelay       time.Duration
+	// MaxRetries is the maximum number of connection attempts. Set to -1 for infinite retries.
+	MaxRetries int
+	// BaseDelay is the starting delay between retry attempts.
+	BaseDelay time.Duration
+	// MaxDelay is the upper limit for the backoff delay.
+	MaxDelay time.Duration
+	// ConnectTimeout is the timeout for each individual connection attempt.
 	ConnectTimeout time.Duration
-	Backoff        float64
-	Jitter         float64 // 0.0 to 1.0 (multiplier for delay added as randomness)
+	// Backoff is the multiplier for the delay after each failed attempt.
+	Backoff float64
+	// Jitter is the amount of randomness (0.0 to 1.0) added to the delay.
+	Jitter float64
 
-	// OnError is an optional hook for fine-grained error reporting and retry logic
-	// (e.g., execute after X errors, or on specific error types).
+	// OnError is an optional hook for fine-grained error reporting and retry logic.
 	OnError OnErrorHandler
-	// Logger is the logger to use for logging.
+	// Logger is the logger instance used for reporting status and errors.
 	Logger utils.Logger
 }
 

@@ -9,6 +9,7 @@ import (
 
 // Resolver handles environment-aware network address translation.
 type Resolver struct {
+	// IsDocker indicates if the current environment is a Docker container.
 	IsDocker bool
 }
 
