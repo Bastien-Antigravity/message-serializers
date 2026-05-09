@@ -28,7 +28,7 @@ CALLBACK_TYPE = CFUNCTYPE(None, c_void_p, c_char_p)
 # -----------------------------------------------------------------------------------------------
 
 
-def load_libdistconf() -> Any:
+def load_libdistconf():
     """
     Locates and loads the libdistconf shared library.
     Returns a ctypes.CDLL handle or None if not found.
