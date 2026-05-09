@@ -1,9 +1,10 @@
+import base64
 import json
 import time
-import base64
-from dataclasses import is_dataclass, asdict
-from typing import Any
+from dataclasses import asdict, is_dataclass
 from enum import Enum
+from typing import Any
+
 from .models import MarketEvent, MarketEventType
 
 class BusinessEncoder(json.JSONEncoder):
@@ -21,16 +22,15 @@ def serialize(obj: Any) -> bytes:
     return json.dumps(obj, cls=BusinessEncoder).encode('utf-8')
 
 def deserialize(data: bytes, target_class: Any) -> Any:
-    """Converts a JSON byte array into the target business object."""
     raw = json.loads(data.decode('utf-8'))
-    
+
     # Handle base64 bytes for MarketEvent payload
     if target_class == MarketEvent and 'payload' in raw:
         raw['payload'] = base64.b64decode(raw['payload'])
         # Handle enum conversion
         if 'type' in raw:
             raw['type'] = MarketEventType(raw['type'])
-            
+
     if is_dataclass(target_class):
         # Filter raw keys to match dataclass fields
         fields = target_class.__dataclass_fields__.keys()
@@ -42,7 +42,7 @@ def wrap_market_event(symbol: str, exchange: str, event_type: MarketEventType, p
     """Creates a MarketEvent envelope for a payload."""
     serialized_payload = serialize(payload)
     ts = system_timestamp()
-    
+
     return MarketEvent(
         event_id=f"{symbol}-{ts}",
         symbol=symbol,

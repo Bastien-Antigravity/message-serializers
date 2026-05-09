@@ -75,7 +75,7 @@ class AppConfig:
         self.cli_args = parse_cli_args(specific_flags, input_args=input_args)
         if self.cli_args.profile:
             profile = self.cli_args.profile
-        
+
         self.profile = profile
         self.data: Dict[str, Any] = {}
         self.logger = ensure_safe_logger(logger)
@@ -111,7 +111,7 @@ class AppConfig:
 
         # ---------------------------------------------------------------------
         # PHASE 2: Apply context-aware overrides
-        # We re-apply the local file as a hard override to ensure the 'local' section 
+        # We re-apply the local file as a hard override to ensure the 'local' section
         # and any local overrides are loaded across all profiles.
         # ---------------------------------------------------------------------
         self.logger.info("{0} : Applying Local File as Hard Override (Ecosystem Parity).".format(self.Name))

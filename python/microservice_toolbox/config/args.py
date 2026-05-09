@@ -1,8 +1,7 @@
 from argparse import ArgumentParser as argparseArgumentParser
 from collections import namedtuple
 from os import environ as osEnviron
-from os.path import exists as osPathExists, basename as osPathBasename
-import sys
+from os.path import exists as osPathExists
 
 CLIArgs = namedtuple("CLIArgs", ["name", "host", "port", "grpc_host", "grpc_port", "conf", "log_level", "key", "profile", "extras"])
 
