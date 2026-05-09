@@ -10,8 +10,7 @@ from microservice_toolbox.business import (
     Signal,
     SignalType,
     Trade,
-    wrap_market_event,
-)
+    wrap_market_event,)
 
 
 class TestBusinessModels(unittest.TestCase):

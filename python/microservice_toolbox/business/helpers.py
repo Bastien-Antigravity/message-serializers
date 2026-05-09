@@ -9,6 +9,7 @@ from .models import MarketEvent, MarketEventType
 
 
 class BusinessEncoder(json.JSONEncoder):
+    """JSON encoder that handles dataclasses, enums, and byte arrays."""
     def default(self, obj):
         if is_dataclass(obj):
             return asdict(obj)
@@ -23,6 +24,7 @@ def serialize(obj: Any) -> bytes:
     return json.dumps(obj, cls=BusinessEncoder).encode('utf-8')
 
 def deserialize(data: bytes, target_class: Any) -> Any:
+    """Converts a JSON byte array back into a business object or dataclass."""
     raw = json.loads(data.decode('utf-8'))
 
     # Handle base64 bytes for MarketEvent payload
