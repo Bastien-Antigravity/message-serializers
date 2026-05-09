@@ -2,14 +2,14 @@ import unittest
 
 from microservice_toolbox.business import (
     Aggressor,
+    deserialize,
     MarketEvent,
     MarketEventType,
     OHLCV,
+    serialize,
     Signal,
     SignalType,
     Trade,
-    deserialize,
-    serialize,
     wrap_market_event,
 )
 

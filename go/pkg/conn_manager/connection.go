@@ -21,6 +21,7 @@ type ManagedConnection struct {
 	mu           sync.Mutex
 }
 
+// NewManagedConnection creates a new connection wrapper.
 func NewManagedConnection(nm *NetworkManager, ip, port, publicIP *string, profile string) *ManagedConnection {
 	return &ManagedConnection{
 		nm:       nm,
@@ -34,6 +35,7 @@ func NewManagedConnection(nm *NetworkManager, ip, port, publicIP *string, profil
 
 // -----------------------------------------------------------------------------
 
+// Write sends data over the connection, automatically reconnecting if needed.
 func (mc *ManagedConnection) Write(p []byte) (n int, err error) {
 	mc.mu.Lock()
 	defer mc.mu.Unlock()
@@ -86,6 +88,7 @@ func (mc *ManagedConnection) isClosing() bool {
 
 // -----------------------------------------------------------------------------
 
+// Close terminates the connection and stops the reconnection loop.
 func (mc *ManagedConnection) Close() error {
 	mc.mu.Lock()
 	select {
