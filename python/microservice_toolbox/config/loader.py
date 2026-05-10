@@ -107,6 +107,15 @@ class AppConfig:
                 if not osPathExists(filename):
                     raise FileNotFoundError(f"{self.Name} : Config file not found for profile '{profile}'")
             self._load_from_file(filename)
+            # Prime the bridge with the natively loaded data to ensure synchronization
+            if self._handle:
+                self.logger.info("{0} : Priming Shared Engine with natively loaded data for profile: {1}".format(self.Name, profile))
+                # Push root keys to 'shared' section in bridge
+                for k, v in self.data.items():
+                    if k not in ["common", "capabilities", "local"]:
+                        lib.DistConf_Set(self._handle, b"shared", k.encode('utf-8'), str(v).encode('utf-8'))
+                # Push structured sections
+                self.share_config(self.data)
 
         # ### PHASE 2: Apply context-aware overrides ###
         self.logger.info("{0} : Applying Local File as Hard Override (Ecosystem Parity).".format(self.Name))
@@ -340,7 +349,10 @@ class AppConfig:
         try:
             full_json = lib.DistConf_GetFullConfig(self._handle)
             if full_json:
-                self.data = jsonLoads(full_json.decode('utf-8'))
+                bridge_data = jsonLoads(full_json.decode('utf-8'))
+                # Merge bridge data into local mirror instead of overwriting
+                # This ensures natively loaded keys (Phase 2) are preserved if the bridge doesn't have them
+                self.deep_merge(self.data, bridge_data)
         except Exception:
             err = lib.DistConf_GetLastError()
             if err:
