@@ -27,6 +27,8 @@ def deep_merge(dst: Dict[str, Any], src: Dict[str, Any]) -> None:
     - If keys match and both values are dicts, it recurses.
     - Otherwise, src value overwrites dst value.
     """
+    if dst is None:
+        return
     for key, value in src.items():
         if isinstance(value, dict) and key in dst and isinstance(dst[key], dict):
             deep_merge(dst[key], value)

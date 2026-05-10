@@ -91,6 +91,11 @@ class AppConfig:
                     self.logger.info("{0} : Unified Shared Engine initialized (handle: {1})".format(self.Name, self._handle))
                     # Sync local data with bridge state
                     self._sync_from_bridge()
+                    
+                    # If bridge is empty (unknown profile or no data), force native fallback
+                    if not self.data or (not self.data.get("capabilities") and not self.data.get("local")):
+                        self.logger.warning("{0} : Bridge returned empty state. Activating Native Fallback for profile: {1}".format(self.Name, profile))
+                        self._handle = None # Force native fallback logic below
             except Exception as e:
                 self.logger.warning("{0} : Shared Engine initialization failed: {1}. Falling back to native loader.".format(self.Name, e))
 
@@ -198,10 +203,10 @@ class AppConfig:
         file_data = self._read_and_expand_yaml(filename)
         if file_data:
             if "capabilities" in file_data:
-                self.data["capabilities"] = self.data.get("capabilities", {})
+                self.data["capabilities"] = self.data.get("capabilities") or {}
                 self.deep_merge(self.data["capabilities"], file_data["capabilities"])
             if "local" in file_data:
-                self.data["local"] = self.data.get("local", {})
+                self.data["local"] = self.data.get("local") or {}
                 self.deep_merge(self.data["local"], file_data["local"])
 
     # -----------------------------------------------------------------------------------------------
