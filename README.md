@@ -4,8 +4,9 @@ type: repository
 status: active
 language: polyglot
 tags:
-  - domain/architecture
-  - domain/configuration
+- \'#service/microservice-toolbox\'
+  - '#domain/architecture'
+  - '#domain/configuration'
 ---
 
 # Microservice Toolbox

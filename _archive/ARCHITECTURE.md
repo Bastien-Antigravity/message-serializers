@@ -3,8 +3,9 @@ microservice: microservice-toolbox
 type: architecture
 status: active
 tags:
-  - domain/architecture
-  - domain/configuration
+- \'#service/microservice-toolbox\'
+  - '#domain/architecture'
+  - '#domain/configuration'
 ---
 
 # Architecture Standards: Microservice Toolbox
