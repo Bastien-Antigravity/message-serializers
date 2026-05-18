@@ -20,7 +20,8 @@ $(EXPANSION_BIN): ../integration/expansion_check.cpp
 	$(CXX) $(CXXFLAGS) ../integration/expansion_check.cpp -o $(EXPANSION_BIN) $(LDFLAGS)
 
 test: $(TEST_BIN)
-	./$(TEST_BIN)
+	TEST_HOST=127.0.0.5 ./$(TEST_BIN)
+
 
 clean:
 	rm -rf bin/
