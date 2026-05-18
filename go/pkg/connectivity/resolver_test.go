@@ -26,7 +26,7 @@ func TestResolver_ResolveBindAddr(t *testing.T) {
 
 	addr, err = r.ResolveBindAddr("1.2.3.4")
 	assert.NoError(t, err)
-	assert.Equal(t, "1.2.3.4", addr, "Docker mode should allow external IP directly")
+	assert.Equal(t, "0.0.0.0", addr, "Docker mode should force 0.0.0.0 to allow orchestrated networking")
 
 	// Test Case 3: isLoopback
 	assert.True(t, r.isLoopback("127.0.0.1"))

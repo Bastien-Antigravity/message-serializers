@@ -139,8 +139,12 @@ void test_env_expansion() {
 
   setenv("TEST_HOST", "127.0.0.5", 1);
   unsetenv("TEST_PORT");
+  
+  std::cout << "DEBUG: TEST_HOST=" << (getenv("TEST_HOST") ? getenv("TEST_HOST") : "NULL") << std::endl;
 
   auto ac = LoadConfig("standalone");
+  
+  std::cout << "DEBUG: Loaded host=" << ac->GetLocal("host") << std::endl;
 
   if (ac->GetLocal("host") != "127.0.0.5") {
     throw std::runtime_error("Env expansion failed for TEST_HOST. Got: " +
@@ -179,6 +183,7 @@ void test_mirror_integrity() {
 int main() {
   // Cleanup any interference
   std::remove("test_config.yaml");
+  std::remove("standalone.yaml");
 
   try {
     test_load_config_factory();
