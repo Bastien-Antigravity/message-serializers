@@ -1,4 +1,0 @@
-common: {name: expansion-test}
-local:
-  host: ${TEST_HOST:localhost}
-  port: ${TEST_PORT:8080}
