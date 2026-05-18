@@ -45,3 +45,9 @@ Enable local configuration loading across all profiles for ecosystem parity.
 ### [SCAN] Role: Sentinel | State: Technical Debt Cleanup (Python UTC)
 - **Warning Resolution**: Replaced deprecated `datetime.utcnow()` with modern timezone-aware `datetime.now(UTC)` in `terminal_ui.py`.
 - **Verification**: Verified zero warnings in Python test suite (29 tests passed).
+
+### [SCAN] Role: Sentinel | State: Bridge Hardening & C++ Refactor Completed
+- **Go Bridge Enhancement**: Added `ApplyFileOverride` to `libdistconf` CGO bridge and facade. This allows non-Go SDKs to leverage Go-native YAML AST parsing and environment expansion (``).
+- **C++ Refactor (Logic Identity)**: Deleted 100+ lines of manual C++ YAML parsing and expansion in `AppConfig.hpp`. Delegated all file-based overrides to the Go bridge.
+- **Networking Hardening**: Implemented "Docker Guard" suppression in Go `NewGRPCServer`. Binding addresses are now forced to `0.0.0.0` in container environments. Verified with `grpc_server_test.go`.
+- **Deployment**: Committed and pushed all changes to the `develop` branch for both `distributed-config` and `microservice-toolbox` repositories.

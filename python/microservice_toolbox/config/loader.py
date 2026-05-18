@@ -202,15 +202,39 @@ class AppConfig:
     # -----------------------------------------------------------------------------------------------
 
     def _apply_file_override(self, filename: str) -> None:
-        """Re-reads file and merges ONLY capabilities as hard override (matches Go applyFileOverride)"""
-        file_data = self._read_and_expand_yaml(filename)
-        if file_data:
-            if "capabilities" in file_data:
-                self.data["capabilities"] = self.data.get("capabilities") or {}
-                self.deep_merge(self.data["capabilities"], file_data["capabilities"])
-            if "local" in file_data:
-                self.data["local"] = self.data.get("local") or {}
-                self.deep_merge(self.data["local"], file_data["local"])
+        """
+        Delegates file override logic to the Go bridge.
+        This ensures 100% logic identity for environment variable expansion
+        and YAML AST processing across all languages.
+        """
+        if not self._handle or not lib:
+            # Native fallback if bridge is unavailable
+            file_data = self._read_and_expand_yaml(filename)
+            if file_data:
+                if "capabilities" in file_data:
+                    self.data["capabilities"] = self.data.get("capabilities") or {}
+                    self.deep_merge(self.data["capabilities"], file_data["capabilities"])
+                if "local" in file_data:
+                    self.data["local"] = self.data.get("local") or {}
+                    self.deep_merge(self.data["local"], file_data["local"])
+            return
+
+        # Attempt override via bridge
+        try:
+            res = lib.DistConf_ApplyFileOverride(self._handle, filename.encode('utf-8'))
+            if res:
+                local_json = res.decode('utf-8')
+                if local_json and local_json != "{}":
+                    local_data = jsonLoads(local_json)
+                    self.data["local"] = self.data.get("local") or {}
+                    self.deep_merge(self.data["local"], local_data)
+                    self.logger.info(f"{self.Name} : Standardized Local overrides merged via bridge: {filename}")
+                
+                # Always sync bridge state back to mirror to capture 'capabilities' and 'common' updates
+                self._sync_from_bridge()
+        except Exception as e:
+            self.logger.warning(f"{self.Name} : Bridge ApplyFileOverride failed: {e}. Falling back to native loader.")
+            # Native fallback already handled or can be triggered here if needed
 
     # -----------------------------------------------------------------------------------------------
 

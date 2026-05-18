@@ -185,6 +185,31 @@ impl AppConfig {
     }
 
     fn apply_file_override(&mut self, filename: &str) {
+        if let Some(handle) = self._handle
+            && let Some(lib) = crate::config::ffi::get_lib() {
+                let filename_c = CString::new(filename).unwrap();
+                let ptr = (lib.dist_conf_apply_file_override)(handle, filename_c.as_ptr());
+                if let Some(local_json) = unsafe { crate::config::ffi::to_rust_string(ptr) } {
+                    if local_json != "{}" {
+                        if let Ok(local_data) = serde_yml::from_str::<Value>(&local_json) {
+                            if self.data.get("local").is_none() {
+                                let _ = self.set_value("local", Value::Mapping(serde_yml::Mapping::new()));
+                            }
+                            if let Some(target_map) = self.data.get_mut("local").and_then(|v| v.as_mapping_mut())
+                                && let Some(source_map) = local_data.as_mapping() {
+                                    for (k, v) in source_map {
+                                        target_map.insert(k.clone(), v.clone());
+                                    }
+                            }
+                            self.logger.info(&format!("Standardized Local overrides merged via bridge: {}", filename));
+                        }
+                    }
+                    self.sync_from_bridge(); // capture common/capabilities updates
+                    return;
+                }
+        }
+
+        // Native fallback if bridge is unavailable
         if let Some(file_data) = self.read_and_expand_yaml(filename) {
             if let Some(caps) = file_data.get("capabilities") {
                 if self.data.get("capabilities").is_none() {

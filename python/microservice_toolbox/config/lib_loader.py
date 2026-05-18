@@ -97,6 +97,9 @@ def load_libdistconf():
         lib_handle.DistConf_Decrypt.argtypes = [c_void_p, c_char_p]
         lib_handle.DistConf_Decrypt.restype = c_char_p
 
+        lib_handle.DistConf_ApplyFileOverride.argtypes = [c_void_p, c_char_p]
+        lib_handle.DistConf_ApplyFileOverride.restype = c_char_p
+
         lib_handle.DistConf_ShareConfig.argtypes = [c_void_p, c_char_p]
         lib_handle.DistConf_ShareConfig.restype = ctypes.c_bool
 

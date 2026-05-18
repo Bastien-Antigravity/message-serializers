@@ -7,20 +7,21 @@ Standardized gRPC server wrapper for the microservice-toolbox.
 Provides lifecycle management for gRPC services with consistent binding and logging.
 
 DATA FLOW:
-1. Receives a listen address and worker configuration.
-2. Services are registered via add_service().
-3. Server starts listening and blocks until termination.
+1. Receives bind address and optional logger.
+2. Resolves address using Docker Guard (via connectivity.Resolver).
+3. Starts the gRPC server and blocks until stopped.
 
 KEY PARAMETERS:
-- addr: The address to bind the gRPC server (e.g., '0.0.0.0:50051').
-- max_workers: Number of threads in the gRPC pool.
+- addr: The requested bind address (e.g. "127.0.0.1:50051").
+- logger: Optional logger for reporting status.
 """
 
 from concurrent import futures
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 import grpc
 
+from ..connectivity.resolver import new_resolver
 from ..utils.logger import Logger, ensure_safe_logger
 
 # -----------------------------------------------------------------------------------------------
@@ -28,45 +29,35 @@ from ..utils.logger import Logger, ensure_safe_logger
 
 class GRPCServer:
     """
-    Standardized gRPC server wrapper for the microservice-toolbox.
-    Provides basic start/stop functionality with consistent logging.
+    Standardized gRPC server wrapper with Docker Guard and consistent logging.
     """
 
     Name = "GRPCServer"
 
     # -----------------------------------------------------------------------------------------------
 
-    def __init__(self, addr: str, max_workers: int = 10, logger: Optional[Logger] = None):
-        self.addr = addr
-        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
+    def __init__(self, addr: str, logger: Optional[Logger] = None, max_workers: int = 10):
         self.logger = ensure_safe_logger(logger)
+        self.resolver = new_resolver()
+
+        # Apply Docker Guard Suppression
+        resolved_addr = self.resolver.resolve_full_bind_addr(addr)
+        if resolved_addr != addr:
+            self.logger.info(
+                "{0} : Docker Guard suppressed bind address {1} -> {2}".format(self.Name, addr, resolved_addr)
+            )
+
+        self.addr = resolved_addr
+        self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
         self._stopped = False
 
     # -----------------------------------------------------------------------------------------------
 
-    def add_service(self, add_func: Callable[[Any, Any], None], servicer: Any) -> None:
-        """
-        Add a service to the gRPC server.
-        Example: server.add_service(msg_pb2_grpc.add_LogServiceServicer_to_server, MyServicer())
-        """
-        add_func(servicer, self.server)
-
-    # -----------------------------------------------------------------------------------------------
-
     def start(self) -> None:
-        """Start the gRPC server."""
-        self.logger.info("{0} : listening on {1}".format(self.Name, self.addr))
-        self.server.add_insecure_port(self.addr)
+        """Starts the gRPC server and blocks."""
+        port = self.server.add_insecure_port(self.addr)
+        self.logger.info("{0} : Listening on {1} (assigned port: {2})".format(self.Name, self.addr, port))
         self.server.start()
-
-    # -----------------------------------------------------------------------------------------------
-
-    def wait_for_termination(self) -> None:
-        """Block until the server is terminated."""
-        try:
-            self.server.wait_for_termination()
-        except KeyboardInterrupt:
-            self.stop()
 
     # -----------------------------------------------------------------------------------------------
 

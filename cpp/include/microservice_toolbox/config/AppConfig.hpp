@@ -123,23 +123,21 @@ public:
    * Supports nested lookups using dot notation (e.g., "database.host").
    */
   std::string GetLocal(const std::string &key) const {
-    // Look in the unified 'local' section of our data mirror
+    // Look in our private local config member (Ecosystem Parity)
     try {
-      if (data_.contains("local")) {
-        auto current = data_["local"];
-        std::stringstream ss(key);
-        std::string part;
-        while (std::getline(ss, part, '.')) {
-          if (current.contains(part)) {
-            current = current[part];
-          } else {
-            return "";
-          }
+      auto current = local_data_;
+      std::stringstream ss(key);
+      std::string part;
+      while (std::getline(ss, part, '.')) {
+        if (current.contains(part)) {
+          current = current[part];
+        } else {
+          return "";
         }
-        if (current.is_string())
-          return current.get<std::string>();
-        return current.dump();
       }
+      if (current.is_string())
+        return current.get<std::string>();
+      return current.dump();
     } catch (...) {
     }
     return "";
@@ -150,9 +148,7 @@ public:
    * Uses nlohmann::json's automatic mapping.
    */
   template <typename T> void UnmarshalLocal(T &target) const {
-    if (data_.contains("local")) {
-      target = data_["local"].get<T>();
-    }
+    target = local_data_.get<T>();
   }
 
   /**
@@ -160,9 +156,7 @@ public:
    * Parity with Go's raw local map.
    */
   nlohmann::json GetLocalJSON() const {
-    if (data_.contains("local"))
-      return data_["local"];
-    return nlohmann::json::object();
+    return local_data_;
   }
 
   /**
@@ -202,6 +196,7 @@ private:
   std::shared_ptr<Logger> logger_;
   std::unique_ptr<distconf::DistConfig> config_;
   nlohmann::json data_;
+  nlohmann::json local_data_;
   CLIArgs args_;
 
   void SyncFromBridge() {
@@ -223,68 +218,21 @@ private:
                                            "config/" + profile_ + ".yaml"};
 
     for (const auto &path : candidates) {
-        if (config_->ApplyFileOverride(path)) {
-            logger_->Info("Standardized Local overrides merged from: " + path);
-            return;
+      std::string local_json = config_->ApplyFileOverride(path);
+      if (local_json != "{}") {
+        try {
+          auto parsed = nlohmann::json::parse(local_json);
+          // Standard Deep Merge for local config parity
+          for (auto it = parsed.begin(); it != parsed.end(); ++it) {
+            local_data_[it.key()] = it.value();
+          }
+          logger_->Info("Standardized Local overrides merged from: " + path);
+        } catch (...) {
+          logger_->Warning("Failed to parse expanded local config from bridge");
         }
-    }
-  }
-    for (const auto &path : candidates) {
-      std::ifstream file(path);
-      if (!file.is_open())
-        continue;
-
-      std::string line;
-      std::vector<std::pair<int, std::string>> stack;
-
-      while (std::getline(file, line)) {
-        if (!line.empty() && line.back() == '\r')
-          line.pop_back();
-        std::string trimmed = line;
-        int indent = trimmed.find_first_not_of(" \t");
-        if (indent == std::string::npos)
-          continue;
-        trimmed.erase(0, indent);
-        if (trimmed.empty() || trimmed[0] == '#')
-          continue;
-
-        size_t colon = trimmed.find(':');
-        if (colon != std::string::npos) {
-          std::string k = trimmed.substr(0, colon);
-          std::string v = trimmed.substr(colon + 1);
-          v.erase(0, v.find_first_not_of(" \t"));
-          v.erase(v.find_last_not_of(" \t") + 1);
-
-          // Adjust stack based on indentation
-          while (!stack.empty() && indent <= stack.back().first) {
-            stack.pop_back();
-          }
-
-          // Traverse JSON to the current level
-          nlohmann::json *current = &data_;
-          for (const auto &level : stack) {
-            if (!current->contains(level.second))
-              (*current)[level.second] = nlohmann::json::object();
-            current = &((*current)[level.second]);
-          }
-
-          if (v.empty()) {
-            // It's a new level
-            stack.push_back({indent, k});
-            if (!current->contains(k))
-              (*current)[k] = nlohmann::json::object();
-          } else {
-            // It's a value
-            if (v.size() >= 2 && ((v.front() == '"' && v.back() == '"') ||
-                                  (v.front() == '\'' && v.back() == '\''))) {
-              v = v.substr(1, v.size() - 2);
-            }
-            (*current)[k] = ExpandEnv(v);
-          }
-        }
+        SyncFromBridge(); // Refresh mirror for common/capabilities
+        return;
       }
-      file.close();
-      logger_->Info("Local overrides merged from " + path);
     }
   }
 
@@ -333,28 +281,6 @@ private:
       setenv("BASTIEN_PRIVATE_KEY_PATH", args_.key.c_str(), 1);
 #endif
     }
-  }
-
-      if (end_pos == std::string::npos)
-        break;
-
-      std::string token = result.substr(start_pos + 2, end_pos - start_pos - 2);
-      std::string var_name = token;
-      std::string default_val = "";
-
-      size_t colon = token.find(':');
-      if (colon != std::string::npos) {
-        var_name = token.substr(0, colon);
-        default_val = token.substr(colon + 1);
-      }
-
-      const char *env_val = std::getenv(var_name.c_str());
-      std::string final_val = (env_val) ? std::string(env_val) : default_val;
-
-      result.replace(start_pos, end_pos - start_pos + 1, final_val);
-      start_pos += final_val.length();
-    }
-    return result;
   }
 };
 

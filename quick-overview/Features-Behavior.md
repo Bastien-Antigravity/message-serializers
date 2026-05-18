@@ -46,9 +46,51 @@ Centralized schema specifications in `/schemas/business` define low-latency bina
 | :--- | :--- | :--- | :--- | :--- | :---: | :---: |
 | **MarketEvent** | `market_event.capnp` | `pkg/business/models.go` | `microservice_toolbox/business` | `src/business/` | ✅ | ❌ |
 | **OHLCV** | `ohlcv.capnp` | `pkg/business/models.go` | `microservice_toolbox/business` | `src/business/` | ✅ | ❌ |
-| **Signal** | `signal.capnp` | `pkg/business/models.go` | `microservice_toolbox/business` | `src/business/` | ✅ | ❌ |
+| Signal | `signal.capnp` | `pkg/business/models.go` | `microservice_toolbox/business` | `src/business/` | ✅ | ❌ |
+
+### 5. Standardized Serialization Providers (JSON vs. MsgPack vs. Cap'n Proto)
+The toolbox provides a unified, language-agnostic serialization layer to support different performance profiles across the fleet.
+
+- **JSON (`NewJSONSerializer`)**: The default human-readable format. Best for configuration, API responses, and low-frequency debugging.
+- **MsgPack (`NewBinSerializer`)**: A binary, schema-less format that is **fully language and machine agnostic**. It is significantly smaller and faster to parse than JSON, making it the standard for internal high-frequency microservice communication.
+- **Cap'n Proto**: The ultra-low latency "Zero-Copy" tier. 
+  - **Ease of Switch**: Services can swap between JSON and MsgPack with a single line change in the factory method. 
+  - **Cap'n Proto Status**: While schemas are standardized in `schemas/business/`, switching to Cap'n Proto requires using generated code rather than the generic `Serializer` interface due to its strict schema-driven, zero-copy architecture.
+
+#### Cap'n Proto Implementation Example (Go)
+For microsecond-sensitive paths (e.g., market data ingestion), bypass the generic `Serializer` and use the generated Cap'n Proto bindings:
+
+```go
+import (
+    "capnproto.org/go/capnp/v3"
+    "github.com/Bastien-Antigravity/microservice-toolbox/go/pkg/business"
+    "github.com/Bastien-Antigravity/microservice-toolbox/go/pkg/schemas/market_event"
+)
+
+func SerializeMarketEvent(evt business.MarketEvent) ([]byte, error) {
+    msg, seg, err := capnp.NewMessage(capnp.SingleSegment(nil))
+    if err != nil {
+        return nil, err
+    }
+
+    // Initialize root struct
+    root, err := market_event.NewRootMarketEvent(seg)
+    if err != nil {
+        return nil, err
+    }
+
+    // Set fields (Zero-copy allocation)
+    root.SetEventId(evt.EventID)
+    root.SetSymbol(evt.Symbol)
+    root.SetTimestamp(evt.Timestamp)
+    
+    // Convert to byte slice
+    return msg.Marshal()
+}
+```
 
 ## Quality & Alignment Observations
+
 
 - **Strict Polyglot Rules**: The project closely enforces the **Mirroring Mandate** and **Behavioral Identity** across the Go reference implementation and its target languages.
 - **UTC Time Sovereignty**: The terminal logger and core UI components correctly utilize UTC timestamps, fulfilling the fleet-wide alignment requirements.
