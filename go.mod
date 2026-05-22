@@ -4,7 +4,7 @@ go 1.25.4
 
 require (
 	github.com/Bastien-Antigravity/distributed-config v0.0.1
-	github.com/Bastien-Antigravity/safe-socket v0.0.1
+	github.com/Bastien-Antigravity/safe-socket v1.8.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	github.com/vmihailenco/msgpack/v5 v5.4.1
